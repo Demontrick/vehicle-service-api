@@ -1,52 +1,64 @@
 # Vehicle Service API
 
+[![CI](https://github.com/Demontrick/vehicle-service-api/actions/workflows/ci.yml/badge.svg)](https://github.com/Demontrick/vehicle-service-api/actions/workflows/ci.yml)
+
 ## Project Overview
 
-A RESTful microservice built in Go for managing vehicle service requests — demonstrating clean architecture, Test-Driven Development, and production-ready deployment practices.
-
-Built as a proof of concept targeting enterprise automotive software engineering roles, specifically reflecting the Extreme Programming culture valued at organisations like Volkswagen Group Digital Solutions.
+A RESTful microservice in Go for managing vehicle service requests. It is a proof of concept demonstrating clean architecture, Test-Driven Development and production-ready deployment practices.
 
 ---
 
 ## Engineering Approach
 
-This project was built following Extreme Programming principles:
-
-- **TDD** — tests written before implementation, covering happy paths, validation, and error scenarios
-- **Clean Code** — single responsibility, clear naming, no unnecessary complexity
-- **SOLID principles** — dependency injection throughout, interfaces for testability
-- **CI/CD** — GitHub Actions pipeline runs on every push to main
-- **Docker** — production-ready containerisation with multi-stage build
+- **TDD**: tests written before the implementation, covering happy paths, validation and error scenarios
+- **Clean Code**: single responsibility, clear naming, no unnecessary complexity
+- **SOLID principles**: dependency injection through interfaces, so each layer can be tested on its own
+- **CI/CD**: a GitHub Actions pipeline runs on every push and pull request to `master`
+- **Docker**: multi-stage build for a small runtime image
 
 ---
 
 ## Tech Stack
 
-- Go 1.22
+- Go 1.26
 - Gorilla Mux (HTTP router)
-- Docker + Docker Compose
+- Docker (multi-stage build)
 - GitHub Actions (CI/CD)
 
 ---
 
 ## Architecture
+
+
 vehicle-service-api/
 ├── cmd/
 │   └── main.go              → application entry point
 ├── internal/
-│   ├── handler/             → HTTP handlers (routing + request/response)
+│   ├── handler/             → HTTP handlers (routing, request/response)
 │   ├── model/               → domain structs and types
-│   ├── repository/          → in-memory data store with mutex for concurrency
-│   └── service/             → business logic + validation
+│   ├── repository/          → in-memory data store guarded by a mutex
+│   └── service/             → business logic and validation
 ├── Dockerfile
 └── .github/workflows/ci.yml
-Clean separation of concerns — same layered architecture pattern used in enterprise Java systems, applied to Go.
+
+
+A layered handler / service / repository structure, familiar from Java systems and applied here in Go. Each layer depends on an interface, not a concrete type.
+
+Architecture diagram: https://gitdiagram.com/demontrick/vehicle-service-api
 
 ---
 
-## Service Request Lifecycle
+## Design Decisions and Limitations
+
+- **In-memory repository with a mutex.** This keeps the service simple, dependency-free and fast to test, and the mutex makes concurrent requests safe. The trade-off is that data does not persist across restarts and one lock guards all access.
+- **Next step:** replace the in-memory repository with PostgreSQL behind the same repository interface, and run the tests against a real database.
+
+---
+
+## Service Request Statuses
+
 PENDING → IN_PROGRESS → COMPLETED
-→ CANCELLED
+        → CANCELLED
 
 ---
 
@@ -55,94 +67,95 @@ PENDING → IN_PROGRESS → COMPLETED
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | /api/services | Get all service requests |
-| POST | /api/services | Create new service request |
-| GET | /api/services/{id} | Get service request by ID |
-| PATCH | /api/services/{id}/status | Update service status |
-| DELETE | /api/services/{id} | Delete service request |
+| POST | /api/services | Create a service request |
+| GET | /api/services/{id} | Get a service request by ID |
+| PATCH | /api/services/{id}/status | Update the status |
+| DELETE | /api/services/{id} | Delete a service request |
 
 ---
 
 ## Example Request
 
-POST /api/services
-```json
+`POST /api/services`
+
+json
 {
-  "vehicleId": "VW-001",
+  "vehicleId": "VEH-001",
   "description": "Oil change required",
   "priority": "HIGH"
 }
-```
+
 
 Response:
-```json
+
+json
 {
   "id": "0a405521-3c38-4e57-b3b8-2a1ca5989734",
-  "vehicleId": "VW-001",
+  "vehicleId": "VEH-001",
   "description": "Oil change required",
   "status": "PENDING",
   "priority": "HIGH",
   "createdAt": "2026-04-06T12:41:16Z",
   "updatedAt": "2026-04-06T12:41:16Z"
 }
-```
+
 
 ---
 
 ## Tests
 
 10 unit tests covering:
-- Service creation — success and validation failures
-- Get all services — empty and populated
-- Get by ID — not found scenario
-- Status update — success and invalid status
-- Delete — success and not found
 
-Run tests:
-```bash
+- Service creation: success and validation failures
+- Get all services: empty and populated
+- Get by ID: not found
+- Status update: success and invalid status
+- Delete: success and not found
+
+bash
 go test ./...
-```
 
 ---
 
 ## How To Run
 
 ### Local
-```bash
+
+bash
 git clone https://github.com/Demontrick/vehicle-service-api.git
 cd vehicle-service-api
 go run cmd/main.go
-```
 
-API available at http://localhost:8080
+
+The API is available at http://localhost:8080
 
 ### Docker
-```bash
+
+bash
 docker build -t vehicle-service-api .
 docker run -p 8080:8080 vehicle-service-api
-```
+
 
 ---
 
 ## CI/CD Pipeline
 
-GitHub Actions pipeline on every push to main:
+The GitHub Actions pipeline runs on every push and pull request to `master`:
 
-1. Go environment setup
-2. Dependencies downloaded
-3. All tests executed
-4. Binary built
-5. Docker image built
-
-Pipeline status: ![CI](https://github.com/Demontrick/vehicle-service-api/actions/workflows/ci.yml/badge.svg)
+1. Set up Go
+2. Download dependencies
+3. Run all tests
+4. Build the binary
+5. Build the Docker image
 
 ---
 
 ## Why Go
 
-Go was chosen deliberately for this project — not Java, which is my primary language. Go's simplicity, performance, and opinionated structure align naturally with Clean Code and Extreme Programming principles. Building this in Go demonstrates adaptability and openness to learn new languages — a core requirement for this role.
+Java is my primary language. I chose Go for this project to learn a new language properly, and built it test-first in two days. Go's simplicity and opinionated structure suit clean architecture and TDD, and the project shows how quickly I can pick up an unfamiliar stack without cutting corners.
 
 ---
 
 ## Author
 
-Portfolio project demonstrating Go microservice development with TDD, Clean Code, and production-ready deployment practices.
+Aman Malik: [GitHub](https://github.com/Demontrick) · [LinkedIn](https://www.linkedin.com/in/aman-malik-b7b586242)
